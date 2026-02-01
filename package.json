@@ -1,0 +1,11 @@
+{
+  "name": "realzodiac",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "filter": "node scripts/filter-stars.js"
+  }
+}

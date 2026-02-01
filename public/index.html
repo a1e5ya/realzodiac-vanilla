@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RealZodiac Hero</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Waterfall&family=Zain:ital,wght@0,200;0,300;0,400;0,700;0,800;0,900;1,300;1,400&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Zain', sans-serif;
+      background: #0a0a14;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      background: rgba(10, 10, 20, 0.8);
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-family: 'Zain', sans-serif;
+      font-size: 24px;
+      color: #d4af37;
+      font-weight: 400;
+    }
+
+    .hamburger {
+      width: 30px;
+      height: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .hamburger span {
+      width: 100%;
+      height: 2px;
+      background: #d4af37;
+      transition: all 0.3s ease;
+    }
+
+    /* Navigation Menu */
+    .nav-menu {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 300px;
+      height: 100vh;
+      background: rgba(10, 10, 20, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 80px 40px;
+      transition: right 0.3s ease;
+      z-index: 999;
+    }
+
+    .nav-menu.active {
+      right: 0;
+    }
+
+    .nav-menu a {
+      display: block;
+      color: #f4e4b7;
+      text-decoration: none;
+      font-size: 20px;
+      margin-bottom: 30px;
+      transition: color 0.3s ease;
+    }
+
+    .nav-menu a:hover {
+      color: #d4af37;
+    }
+
+    #scroll-container {
+      height: 400vh;
+    }
+
+    #stars-canvas,
+    #constellation-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      pointer-events: none;
+    }
+
+    #stars-canvas { z-index: 1; }
+    #constellation-canvas { z-index: 2; }
+
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: rgba(212, 175, 55, 0.2);
+      z-index: 200;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #d4af37, #f4e4b7);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .section {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 10;
+      max-width: 90%;
+    }
+
+    .section[data-index="0"] {
+      font-family: 'Waterfall', cursive;
+      font-size: clamp(60px, 15vw, 140px);
+      font-weight: 400;
+      color: #d4af37;
+      line-height: 1.2;
+    }
+
+    .section[data-index="1"] {
+      font-family: 'Zain', sans-serif;
+      font-size: clamp(24px, 5vw, 42px);
+      color: #f4e4b7;
+      font-weight: 300;
+    }
+
+    .cta {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      opacity: 0;
+      z-index: 10;
+      font-family: 'Zain', sans-serif;
+      font-size: clamp(32px, 7vw, 56px);
+      color: #d4af37;
+      font-weight: 400;
+      letter-spacing: 2px;
+    }
+
+    .scroll-arrow {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      opacity: 0.6;
+      z-index: 100;
+      animation: arrowTwinkle 5s ease-in-out infinite;
+    }
+
+    .scroll-arrow svg {
+      width: 100%;
+      height: 100%;
+      animation: bounceSlow 5s ease-in-out infinite;
+    }
+
+    @keyframes bounceSlow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(4px); }
+    }
+
+    @keyframes arrowTwinkle {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 0.35; }
+    }
+
+    /* Sections after hero */
+    #hero {
+      position: relative;
+      height: 400vh;
+    }
+
+    #scroll-container {
+      height: 100%;
+    }
+
+    .content-section {
+      min-height: 100vh;
+      padding: 100px 40px;
+      position: relative;
+    }
+
+    .section-intro {
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .section-intro p {
+      font-size: 18px;
+      color: #f4e4b7;
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-family: 'Waterfall', cursive;
+      font-size: clamp(48px, 10vw, 80px);
+      color: #d4af37;
+      margin-bottom: 60px;
+      text-align: center;
+      font-weight: 300;
+    }
+
+    .placeholder {
+      min-height: 400px;
+      border: 2px dashed rgba(212, 175, 55, 0.3);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(244, 228, 183, 0.5);
+      font-size: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 15px 20px;
+      }
+
+      .content-section {
+        padding: 80px 20px;
+      }
+
+      .section-intro p {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo">RealZodiac.app</div>
+    <div class="hamburger" id="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </header>
+
+  <!-- Navigation Menu -->
+  <nav class="nav-menu" id="navMenu">
+    <a href="#hero">Home</a>
+    <a href="#intro">The Truth</a>
+    <a href="#starmap">Your Real Sign</a>
+    <a href="#comparison">Compare</a>
+    <a href="#premium">Premium</a>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="hero">
+    <div id="scroll-container"></div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <canvas id="stars-canvas"></canvas>
+    <canvas id="constellation-canvas"></canvas>
+
+    <div class="section" data-index="0">
+      Discover Your Real Zodiac
+    </div>
+
+    <div class="section" data-index="1">
+      The stars have shifted since ancient times
+    </div>
+
+    <div class="cta" id="cta">
+      Begin Your Journey
+    </div>
+
+    <div class="scroll-arrow">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 5V19M12 19L5 12M12 19L19 12" stroke="rgba(212, 175, 55, 0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Intro Section -->
+  <section id="intro" class="content-section">
+    <div class="section-intro">
+      <p>For thousands of years, humans have looked to the <span style="color: #fbbf24;">stars</span> for guidance. The <span style="color: #60a5fa;">zodiac</span>—a belt of constellations along the <span style="color: #d4af37;">Sun's path</span>—has been used to mark time, predict seasons, and create stories about our place in the cosmos.</p>
+      
+      <p>But there's something most people don't know: the zodiac you learned about isn't accurate anymore. Due to Earth's <span style="color: #34d399;">axial precession</span>—a slow wobble taking <span style="color: #fbbf24;">26,000 years</span>—the constellations have shifted by approximately <span style="color: #fb923c;">30 days</span> since the zodiac was first defined in ancient Babylon.</p>
+      
+      <p>When <span style="color: #f472b6;">astrology</span> says you're a Leo, it's using sky positions from over <span style="color: #60a5fa;">2,000 years ago</span>. But where was the Sun <span style="color: #fbbf24;">really</span> located on your birth date? That's what we're here to show you—using real <span style="color: #34d399;">astronomical data</span> and the actual constellation boundaries defined by modern <span style="color: #34d399;">astronomy</span>.</p>
+    </div>
+  </section>
+
+  <!-- Star Map Section -->
+  <section id="starmap" class="content-section">
+    <h2 class="section-title">Discover Your Real Sign</h2>
+    <div class="placeholder">
+      Date Picker & Interactive Star Map
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section id="comparison" class="content-section">
+    <h2 class="section-title">Astrology vs Astronomy</h2>
+    <div class="placeholder">
+      Comparison Cards: What Astrology Says vs Where Sun Actually Was
+    </div>
+  </section>
+
+  <!-- Premium Section -->
+  <section id="premium" class="content-section">
+    <h2 class="section-title">Unlock Your Full Birth Chart</h2>
+    <div class="placeholder">
+      Premium Features & Pricing
+    </div>
+  </section>
+
+  <script>
+    const starsCanvas = document.getElementById('stars-canvas');
+    const starsCtx = starsCanvas.getContext('2d');
+    const constCanvas = document.getElementById('constellation-canvas');
+    const constCtx = constCanvas.getContext('2d');
+
+    function resizeCanvases() {
+      starsCanvas.width = constCanvas.width = window.innerWidth;
+      starsCanvas.height = constCanvas.height = window.innerHeight;
+    }
+    resizeCanvases();
+    window.addEventListener('resize', resizeCanvases);
+
+    // Star drawing function
+    function draw4PointStar(ctx, x, y, size, opacity) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = `rgba(244, 228, 183, ${opacity * 0.6})`;
+      ctx.fillStyle = `rgba(244, 228, 183, ${opacity})`;
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI / 2);
+        const outerX = Math.cos(angle) * size;
+        const outerY = Math.sin(angle) * size;
+        const innerAngle = angle + Math.PI / 4;
+        const innerX = Math.cos(innerAngle) * size * 0.3;
+        const innerY = Math.sin(innerAngle) * size * 0.3;
+        if (i === 0) ctx.moveTo(outerX, outerY);
+        else ctx.lineTo(outerX, outerY);
+        ctx.lineTo(innerX, innerY);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Background stars
+    class BackgroundStar {
+      constructor() {
+        this.x = Math.random() * starsCanvas.width;
+        this.y = Math.random() * starsCanvas.height;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.baseOpacity = Math.random() * 0.4 + 0.2;
+        this.twinkleSpeed = Math.random() * 0.001 + 0.0005;
+        this.twinklePhase = Math.random() * Math.PI * 2;
+      }
+
+      draw() {
+        const twinkle = Math.sin(Date.now() * this.twinkleSpeed + this.twinklePhase) * 0.4 + 0.6;
+        const opacity = this.baseOpacity * twinkle;
+        draw4PointStar(starsCtx, this.x, this.y, this.size, opacity);
+      }
+    }
+
+    const stars = Array.from({ length: 60 }, () => new BackgroundStar());
+
+    function drawStars() {
+      starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+      stars.forEach(s => s.draw());
+    }
+
+    // LEO constellation (12-15 stars, more random/organic)
+    const leoConstellation = {
+      stars: [
+        { x: 0.48, y: 0.28, connections: [1, 3], size: 11 },
+        { x: 0.42, y: 0.35, connections: [2], size: 9 },
+        { x: 0.35, y: 0.42, connections: [4], size: 10 },
+        { x: 0.55, y: 0.32, connections: [5], size: 9 },
+        { x: 0.30, y: 0.48, connections: [6], size: 8 },
+        { x: 0.62, y: 0.40, connections: [7, 8], size: 10 },
+        { x: 0.28, y: 0.56, connections: [], size: 7 },
+        { x: 0.68, y: 0.48, connections: [9], size: 9 },
+        { x: 0.58, y: 0.50, connections: [10], size: 8 },
+        { x: 0.72, y: 0.58, connections: [11], size: 8 },
+        { x: 0.52, y: 0.58, connections: [12], size: 9 },
+        { x: 0.75, y: 0.66, connections: [], size: 7 },
+        { x: 0.46, y: 0.66, connections: [13], size: 8 },
+        { x: 0.40, y: 0.72, connections: [], size: 7 },
+        { x: 0.65, y: 0.70, connections: [], size: 8 }
+      ]
+    };
+
+    // CANCER constellation (rotated 160 degrees, bigger and wider, moved down)
+    const cancerConstellation = {
+      stars: [
+        { x: 0.50, y: 0.75, connections: [1, 2, 3], size: 13 },
+        { x: 0.38, y: 0.65, connections: [4], size: 11 },
+        { x: 0.62, y: 0.65, connections: [5], size: 11 },
+        { x: 0.50, y: 0.57, connections: [6], size: 12 },
+        { x: 0.32, y: 0.53, connections: [7], size: 10 },
+        { x: 0.68, y: 0.53, connections: [8], size: 10 },
+        { x: 0.40, y: 0.45, connections: [9], size: 11 },
+        { x: 0.28, y: 0.41, connections: [], size: 9 },
+        { x: 0.72, y: 0.41, connections: [10], size: 9 },
+        { x: 0.50, y: 0.35, connections: [11], size: 10 },
+        { x: 0.78, y: 0.33, connections: [], size: 9 },
+        { x: 0.60, y: 0.29, connections: [], size: 10 },
+        { x: 0.34, y: 0.37, connections: [], size: 9 }
+      ]
+    };
+
+    function drawConstellation(constellation, progress, driftAmount, animated = true, scale = 1) {
+      const w = constCanvas.width;
+      const h = constCanvas.height;
+      
+      const centerX = w / 2;
+      const centerY = h / 2;
+
+      // Calculate total lines
+      let totalLines = 0;
+      constellation.stars.forEach(star => {
+        totalLines += star.connections.length;
+      });
+
+      constCtx.strokeStyle = `rgba(212, 175, 55, 0.6)`;
+      constCtx.lineWidth = 1.5;
+      constCtx.shadowBlur = 12;
+      constCtx.shadowColor = `rgba(212, 175, 55, 0.7)`;
+
+      if (animated) {
+        // Animated drawing - lines draw progressively
+        const totalProgress = progress * totalLines;
+        let currentLineIndex = 0;
+
+        constellation.stars.forEach(star => {
+          star.connections.forEach(targetIdx => {
+            const target = constellation.stars[targetIdx];
+            
+            if (currentLineIndex < totalProgress) {
+              const lineProgress = Math.min(totalProgress - currentLineIndex, 1);
+              
+              // Apply scale from center
+              const startX = centerX + (star.x * w - centerX) * scale + driftAmount;
+              const startY = centerY + (star.y * h - centerY) * scale;
+              const endX = centerX + (target.x * w - centerX) * scale + driftAmount;
+              const endY = centerY + (target.y * h - centerY) * scale;
+              
+              const currentEndX = startX + (endX - startX) * lineProgress;
+              const currentEndY = startY + (endY - startY) * lineProgress;
+              
+              constCtx.beginPath();
+              constCtx.moveTo(startX, startY);
+              constCtx.lineTo(currentEndX, currentEndY);
+              constCtx.stroke();
+            }
+            currentLineIndex++;
+          });
+        });
+
+        // Draw stars (appear as their lines reach them)
+        constellation.stars.forEach((star, i) => {
+          const starLineIndex = constellation.stars.slice(0, i).reduce((sum, s) => sum + s.connections.length, 0);
+          if (starLineIndex <= totalProgress) {
+            const pulse = Math.sin(Date.now() * 0.002 + i) * 0.3 + 0.7;
+            const starX = centerX + (star.x * w - centerX) * scale + driftAmount;
+            const starY = centerY + (star.y * h - centerY) * scale;
+            draw4PointStar(constCtx, starX, starY, star.size * pulse * scale, 1);
+          }
+        });
+      } else {
+        // Instant - show all lines fully drawn
+        constellation.stars.forEach(star => {
+          star.connections.forEach(targetIdx => {
+            const target = constellation.stars[targetIdx];
+            const startX = centerX + (star.x * w - centerX) * scale + driftAmount;
+            const startY = centerY + (star.y * h - centerY) * scale;
+            const endX = centerX + (target.x * w - centerX) * scale + driftAmount;
+            const endY = centerY + (target.y * h - centerY) * scale;
+            
+            constCtx.beginPath();
+            constCtx.moveTo(startX, startY);
+            constCtx.lineTo(endX, endY);
+            constCtx.stroke();
+          });
+        });
+
+        // Draw all stars
+        constellation.stars.forEach((star, i) => {
+          const pulse = Math.sin(Date.now() * 0.002 + i) * 0.3 + 0.7;
+          const starX = centerX + (star.x * w - centerX) * scale + driftAmount;
+          const starY = centerY + (star.y * h - centerY) * scale;
+          draw4PointStar(constCtx, starX, starY, star.size * pulse * scale, 1);
+        });
+      }
+    }
+
+    function drawConstellations(scrollProgress) {
+      constCtx.clearRect(0, 0, constCanvas.width, constCanvas.height);
+
+      const w = constCanvas.width;
+
+      // Timeline:
+      // 0.00-0.15: Title
+      // 0.15-0.30: Subtitle
+      // 0.30-0.50: Leo appears line-by-line
+      // 0.50-0.60: Leo drifts left & fades
+      // 0.60-0.80: Cancer appears line-by-line
+      // 0.80-0.90: Cancer drifts left & dissolves
+      // 0.90-1.00: CTA appears
+
+      // LEO phase - ANIMATED line drawing with pause
+      if (scrollProgress >= 0.30 && scrollProgress < 0.62) {
+        if (scrollProgress < 0.50) {
+          // Leo appearing with animated line drawing
+          const leoProgress = (scrollProgress - 0.30) / 0.20;
+          constCtx.globalAlpha = 1;
+          drawConstellation(leoConstellation, leoProgress, 0, true, 1);
+        } else if (scrollProgress < 0.54) {
+          // Leo complete, holding still (pause)
+          constCtx.globalAlpha = 1;
+          drawConstellation(leoConstellation, 1, 0, false, 1);
+        } else {
+          // Leo drifting left & fading
+          const driftProgress = (scrollProgress - 0.54) / 0.08;
+          const driftAmount = -w * 0.4 * driftProgress;
+          constCtx.globalAlpha = 1 - driftProgress;
+          drawConstellation(leoConstellation, 1, driftAmount, false, 1);
+        }
+      }
+
+      // CANCER phase - appears from RIGHT, moves to center (starts earlier for smoother transition)
+      if (scrollProgress >= 0.60 && scrollProgress < 0.90) {
+        if (scrollProgress < 0.70) {
+          // Cancer appearing from right, moving to center
+          const moveProgress = (scrollProgress - 0.60) / 0.10;
+          const driftAmount = w * 0.4 * (1 - moveProgress); // Start from right
+          constCtx.globalAlpha = moveProgress; // Fade in as it moves
+          drawConstellation(cancerConstellation, 1, driftAmount, false, 1);
+        } else if (scrollProgress < 0.75) {
+          // Cancer in center, holding still
+          constCtx.globalAlpha = 1;
+          drawConstellation(cancerConstellation, 1, 0, false, 1);
+        } else {
+          // Cancer zooming towards us & dissolving
+          const zoomProgress = (scrollProgress - 0.75) / 0.15;
+          const scale = 1 + zoomProgress * 0.5;
+          constCtx.globalAlpha = 1 - zoomProgress;
+          drawConstellation(cancerConstellation, 1, 0, false, scale);
+        }
+      }
+
+      constCtx.globalAlpha = 1;
+    }
+
+    // Scroll handling
+    const sections = document.querySelectorAll('.section');
+    const cta = document.getElementById('cta');
+
+    function handleScroll() {
+      const scrollTop = window.scrollY;
+      const scrollHeight = document.getElementById('scroll-container').offsetHeight;
+      const windowHeight = window.innerHeight;
+      const maxScroll = scrollHeight - windowHeight;
+      const scrollProgress = Math.min(scrollTop / maxScroll, 1);
+
+      document.getElementById('progress-fill').style.width = `${scrollProgress * 100}%`;
+
+      // Title (0.00-0.20)
+      if (scrollProgress < 0.15) {
+        sections[0].style.opacity = Math.min(scrollProgress / 0.10, 1);
+      } else {
+        sections[0].style.opacity = Math.max(1 - (scrollProgress - 0.15) / 0.05, 0);
+      }
+
+      // Subtitle (0.15-0.35)
+      if (scrollProgress < 0.15) {
+        sections[1].style.opacity = 0;
+      } else if (scrollProgress < 0.25) {
+        sections[1].style.opacity = (scrollProgress - 0.15) / 0.10;
+      } else if (scrollProgress < 0.30) {
+        sections[1].style.opacity = 1;
+      } else {
+        sections[1].style.opacity = Math.max(1 - (scrollProgress - 0.30) / 0.05, 0);
+      }
+
+      // CTA (0.85-1.00, smooth dissolve)
+      if (scrollProgress >= 0.85 && scrollProgress < 0.92) {
+        cta.style.opacity = (scrollProgress - 0.85) / 0.07;
+      } else if (scrollProgress >= 0.92 && scrollProgress < 1.00) {
+        cta.style.opacity = 1 - ((scrollProgress - 0.92) / 0.08);
+      } else {
+        cta.style.opacity = 0;
+      }
+
+      drawConstellations(scrollProgress);
+    }
+
+    function animate() {
+      drawStars();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    animate();
+
+    // Hamburger menu toggle
+    const hamburger = document.getElementById('hamburger');
+    const navMenu = document.getElementById('navMenu');
+    
+    hamburger.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+
+    // Close menu when clicking a link
+    document.querySelectorAll('.nav-menu a').forEach(link => {
+      link.addEventListener('click', () => {
+        navMenu.classList.remove('active');
+      });
+    });
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
