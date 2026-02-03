@@ -2,8 +2,7 @@
 node_modules/
 
 # Assets (large files, not for git)
-public/assets/cathedral/
-public/assets/signs/
+public/assets/
 
 # Environment
 .env
