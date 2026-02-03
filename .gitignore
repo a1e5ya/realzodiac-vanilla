@@ -1,4 +1,24 @@
+# Dependencies
 node_modules/
-.DS_Store
+
+# Assets (large files, not for git)
+public/assets/cathedral/
+public/assets/signs/
+
+# Environment
 .env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

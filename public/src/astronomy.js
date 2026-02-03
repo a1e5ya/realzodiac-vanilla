@@ -1,108 +1,88 @@
 // src/astronomy.js
-// Sun, Moon, planets, special points, zodiac detection, solar alt/az.
-// Planet positions are approximate (mean elements, circular orbits).
-// Sun is accurate to ~0.01°. Good enough for visualization + zodiac detection.
+// Uses astronomy-engine (loaded globally via <script> tag) for Sun, Moon, planets.
+// Special points (Lilith, Chiron, North Node) use mean-element approximations.
+// Zodiac detection: ecliptic longitude → IAU constellation boundaries.
 
-function toRad(d) { return d * Math.PI / 180; }
-function toDeg(r) { return r * 180 / Math.PI; }
-function mod360(d) { return ((d % 360) + 360) % 360; }
+// astronomy-engine is loaded as window.Astronomy via script tag in index.html
+const Astronomy = window.Astronomy;
 
-const J2000 = Date.UTC(2000, 0, 1, 12, 0, 0);
-function daysSinceJ2000(date) { return (date.getTime() - J2000) / 86400000; }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const toRad  = d => d * Math.PI / 180;
+const toDeg  = r => r * 180 / Math.PI;
+const mod360 = d => ((d % 360) + 360) % 360;
 
-function obliquity(n) { return 23.439 - 0.0000004 * n; }
+const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
+function daysSinceJ2000(date) { return (date.getTime() - J2000_MS) / 86400000; }
 
-// Ecliptic lon → equatorial RA/Dec (assumes ecliptic lat = 0)
-function eclToEq(lon, n) {
-  const eps = toRad(obliquity(n));
-  const l   = toRad(lon);
-  return {
-    ra:  mod360(toDeg(Math.atan2(Math.cos(eps) * Math.sin(l), Math.cos(l)))),
-    dec: toDeg(Math.asin(Math.sin(eps) * Math.sin(l)))
-  };
+// Ecliptic (lon, lat) → equatorial (RA, Dec). Obliquity 23.4393° is constant.
+function eclToEq(lon, lat) {
+  const eps = toRad(23.4393);
+  const lonR = toRad(lon), latR = toRad(lat);
+  const sinDec = Math.sin(latR) * Math.cos(eps) +
+                 Math.cos(latR) * Math.sin(eps) * Math.sin(lonR);
+  const dec = toDeg(Math.asin(Math.max(-1, Math.min(1, sinDec))));
+  const ra  = mod360(toDeg(Math.atan2(
+    Math.sin(lonR) * Math.cos(eps) - Math.tan(latR) * Math.sin(eps),
+    Math.cos(lonR)
+  )));
+  return { ra, dec };
 }
 
-// ─── Sun ────────────────────────────────────────────────────────────────────
+// ─── Sun (astronomy-engine) ─────────────────────────────────────────────────
 export function getSunPosition(date) {
-  const n   = daysSinceJ2000(date);
-  const L   = mod360(280.460 + 0.9856474 * n);
-  const g   = toRad(mod360(357.528 + 0.9856003 * n));
-  const lon = mod360(L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g));
-  const { ra, dec } = eclToEq(lon, n);
+  const sp  = Astronomy.SunPosition(date);
+  const lon = sp.elon;                         // ecliptic longitude
+  const { ra, dec } = eclToEq(lon, 0);        // Sun is on ecliptic (lat=0)
   return { ra, dec, lon };
 }
 
-// ─── Moon ───────────────────────────────────────────────────────────────────
+// ─── Moon (astronomy-engine) ────────────────────────────────────────────────
 export function getMoon(date) {
-  const knownNew = Date.UTC(2000, 0, 6, 18, 14, 0);
-  const days     = (date.getTime() - knownNew) / 86400000;
-  const synodic  = 29.53058867;
+  const vec = Astronomy.GeoVector('Moon', date, false);
+  const ecl = Astronomy.Ecliptic(vec);
+  const { ra, dec } = eclToEq(ecl.elon, ecl.elat);
 
-  let phase = (days % synodic) / synodic;
-  if (phase < 0) phase += 1;
-
-  const sun = getSunPosition(date);
-  const ra  = mod360(sun.ra + (days % synodic) * 12.19);
-
-  // Dec oscillates ±5.15° over draconic month
-  const dec = 5.145 * Math.sin((days / 27.21222) * 2 * Math.PI);
+  // MoonPhase: 0°=new, 180°=full. Convert to 0–1 (0=new, 0.5=full).
+  const phase = mod360(Astronomy.MoonPhase(date)) / 360;
 
   return { ra, dec, phase };
 }
 
-// ─── Planets (approximate geocentric) ──────────────────────────────────────
-const EARTH_EL  = { a: 1.000, L0: 100.46, period: 365.256 };
-const PLANET_EL = {
-  mercury:  { a: 0.387,  L0: 252.25, period:  87.969  },
-  venus:    { a: 0.723,  L0: 181.98, period: 224.701  },
-  mars:     { a: 1.524,  L0: 355.45, period: 686.980  },
-  jupiter:  { a: 5.203,  L0:  34.35, period: 4332.59  },
-  saturn:   { a: 9.537,  L0:  50.08, period: 10759.2  },
-  uranus:   { a: 19.19,  L0: 314.05, period: 30689.0  },
-  neptune:  { a: 30.07,  L0: 304.97, period: 60182.0  },
+// ─── Planets (astronomy-engine) ─────────────────────────────────────────────
+const PLANET_BODY = {
+  mercury:'Mercury', venus:'Venus', mars:'Mars',
+  jupiter:'Jupiter', saturn:'Saturn', uranus:'Uranus', neptune:'Neptune'
 };
 
-function helioLon(el, n) { return toRad(mod360(el.L0 + (360 / el.period) * n)); }
-
 export function getPlanetPosition(planet, date) {
-  const el = PLANET_EL[planet];
-  if (!el) return null;
-  const n  = daysSinceJ2000(date);
-
-  const Lp = helioLon(el, n);
-  const Le = helioLon(EARTH_EL, n);
-
-  const gx  = el.a * Math.cos(Lp) - EARTH_EL.a * Math.cos(Le);
-  const gy  = el.a * Math.sin(Lp) - EARTH_EL.a * Math.sin(Le);
-  const lon = mod360(toDeg(Math.atan2(gy, gx)));
-
-  const { ra, dec } = eclToEq(lon, n);
-  return { ra, dec, lon };
+  const body = PLANET_BODY[planet];
+  if (!body) return null;
+  const vec = Astronomy.GeoVector(body, date, false);
+  const ecl = Astronomy.Ecliptic(vec);
+  const { ra, dec } = eclToEq(ecl.elon, ecl.elat);
+  return { ra, dec };
 }
 
-// ─── Special points ─────────────────────────────────────────────────────────
+// ─── Special points (mean-element approximations) ──────────────────────────
 export function getNorthNode(date) {
   const n   = daysSinceJ2000(date);
   const lon = mod360(125.04 - 0.05295 * n);
-  const { ra, dec } = eclToEq(lon, n);
-  return { ra, dec, lon };
+  return { ...eclToEq(lon, 0), lon };
 }
 
 export function getLilith(date) {
   const n   = daysSinceJ2000(date);
   const lon = mod360(45.0 + (360 / 3232.6) * n);
-  const { ra, dec } = eclToEq(lon, n);
-  return { ra, dec, lon };
+  return { ...eclToEq(lon, 0), lon };
 }
 
 export function getChiron(date) {
   const n   = daysSinceJ2000(date);
   const lon = mod360(120.5 + 0.01945 * n);
-  const { ra, dec } = eclToEq(lon, n);
-  return { ra, dec, lon };
+  return { ...eclToEq(lon, 0), lon };
 }
 
-// ─── Solar altitude / azimuth (for horizon rendering) ──────────────────────
+// ─── Solar altitude / azimuth ───────────────────────────────────────────────
 export function getSolarAltAz(date, lat, lon) {
   const n   = daysSinceJ2000(date);
   const dec = 23.45 * Math.sin(toRad(mod360((360 / 365) * (n % 365 + 10))));
@@ -116,16 +96,17 @@ export function getSolarAltAz(date, lat, lon) {
   const altitude = toDeg(Math.asin(Math.max(-1, Math.min(1, sinAlt))));
 
   const cosAlt = Math.cos(toRad(altitude));
-  let azimuth = 0;
+  let azimuth  = 0;
   if (cosAlt > 0.001) {
     const sinAz = Math.cos(decR) * Math.sin(haR) / cosAlt;
-    const cosAz = (Math.sin(decR) - Math.sin(latR) * sinAlt) / (Math.cos(latR) * cosAlt);
-    azimuth = ((toDeg(Math.atan2(sinAz, cosAz)) % 360) + 360) % 360;
+    const cosAz = (Math.sin(decR) - Math.sin(latR) * sinAlt) /
+                  (Math.cos(latR) * cosAlt);
+    azimuth = mod360(toDeg(Math.atan2(sinAz, cosAz)));
   }
   return { altitude, azimuth };
 }
 
-// ─── Zodiac detection ───────────────────────────────────────────────────────
+// ─── Zodiac detection (ecliptic longitude → IAU constellation) ──────────────
 const ZODIAC_BOUNDS = [
   { id:"Sgr", from:266.3, to:300.0 },
   { id:"Cap", from:300.0, to:327.0 },
