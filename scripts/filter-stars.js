@@ -16,9 +16,9 @@ const ZODIAC = [
 ];
 
 // Ecliptic is tilted 23.4° to celestial equator.
-// Keep stars within ±30° of ecliptic → dec range ≈ -53° to +53°
-const DEC_MIN = -53;
-const DEC_MAX = 53;
+// Keep stars within ±45° of ecliptic → dec range ≈ -68° to +68°
+const DEC_MIN = -68;
+const DEC_MAX = 68;
 
 const STARS_URL = "https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/stars.6.json";
 const CONST_URL = "https://raw.githubusercontent.com/ofrohn/d3-celestial/master/data/constellations.lines.json";

@@ -1,23 +1,19 @@
 // src/rendering.js
 // Canvas star map rendering. Stereographic projection centered on Sun.
-// Ported drawing functions from useCanvasRendering.js (Vue version).
+// Sun is always fixed at screen center.
 
-// ─── Projection (stereographic, centered on centerRA) ──────────────────────
+// ─── Projection (inside celestial sphere, looking outward) ─────────────────
 export function project(ra, dec, centerRA) {
   const toRad = d => d * Math.PI / 180;
   let dra = ra - centerRA;
   if (dra > 180) dra -= 360;
   if (dra < -180) dra += 360;
 
-  const draR = toRad(dra);
-  const decR = toRad(dec);
-  const cosDist = Math.cos(decR) * Math.cos(draR);
-  if (cosDist < -0.01) return null; // behind the sphere
-
-  const d = 1 + cosDist;
+  // Simple angular mapping - we're inside looking out
+  // X = RA offset, Y = Dec
   return {
-    x:  Math.cos(decR) * Math.sin(draR) / d,
-    y: -Math.sin(decR) / d
+    x:  toRad(dra),
+    y: -toRad(dec)
   };
 }
 
@@ -255,19 +251,23 @@ export const SPECIALS = {
 };
 
 // ─── Main draw ──────────────────────────────────────────────────────────────
-// opts: { stars, constellations, sunRA, sunDec, activeConstId,
-//         moon:{ra,dec,phase}, planets:{id:{ra,dec},...},
-//         specials:{moon,lilith,northNode,chiron}, altitude }
 export function drawStarMap(ctx, opts) {
   const dpr = window.devicePixelRatio || 1;
   const w   = ctx.canvas.width  / dpr;
   const h   = ctx.canvas.height / dpr;
-  const cx  = w / 2, cy = h / 2;
-  const scale = Math.min(w, h) * 0.45;
+  const scale = Math.min(w, h) * 1.0; // natural scale, inside the sphere
   const { stars, constellations, sunRA, sunDec, activeConstId,
           moon, planets, specials, altitude } = opts;
 
   ctx.clearRect(0, 0, w, h);
+
+  // Calculate Sun position to keep it centered
+  const sunProj = project(sunRA, sunDec, sunRA);
+  const sunOffsetY = sunProj ? sunProj.y * scale : 0;
+  
+  // Adjust center: Sun at vertical center (slightly higher to account for controls)
+  const cx = w / 2;
+  const cy = h * 0.42 - sunOffsetY;
 
   // Earth/horizon
   if (altitude !== undefined && altitude !== null) {
@@ -299,13 +299,27 @@ export function drawStarMap(ctx, opts) {
   ctx.shadowBlur = 0;
 
   // Stars (shadows only for bright stars, mag < 3)
+  // Fade stars based on distance from center
   stars.forEach(s => {
     const p = project(s.ra, s.dec, sunRA);
     if (!p) return;
     const px = cx + p.x * scale;
     const py = cy + p.y * scale;
-    const r  = starRadius(s.mag);
-    drawStarShape4(ctx, px, py, r, starColor(s.bv), s.mag < 3 ? starColor(s.bv, 0.4) : null);
+    
+    // Calculate distance from center (0 at center, 1 at edge)
+    const distX = (px - cx) / (w / 2);
+    const distY = (py - cy) / (h / 2);
+    const dist = Math.sqrt(distX * distX + distY * distY);
+    
+    // Fade opacity: 1.0 at center, 0.2 at edges
+    const opacity = Math.max(0.2, 1.0 - dist * 0.8);
+    
+    const r = starRadius(s.mag);
+    const baseColor = starColor(s.bv);
+    const fadedColor = starColor(s.bv, opacity);
+    const glowColor = s.mag < 3 ? starColor(s.bv, opacity * 0.4) : null;
+    
+    drawStarShape4(ctx, px, py, r, fadedColor, glowColor);
   });
 
   // Planets
@@ -321,18 +335,22 @@ export function drawStarMap(ctx, opts) {
 
   // Special points
   if (specials) {
+    // Moon - keep visible
     if (specials.moon) {
       const p = project(specials.moon.ra, specials.moon.dec, sunRA);
       if (p) drawMoon(ctx, cx + p.x * scale, cy + p.y * scale, specials.moon.phase);
     }
+    
+    // Other special points - HIDDEN for now (keep code for later)
+    /*
     ['lilith', 'northNode', 'chiron'].forEach(key => {
       if (!specials[key]) return;
       const p = project(specials[key].ra, specials[key].dec, sunRA);
       if (p) drawSpecialPoint(ctx, cx + p.x * scale, cy + p.y * scale, SPECIALS[key]);
     });
+    */
   }
 
-  // Sun — drawn last, on top
-  const sunP = project(sunRA, sunDec, sunRA);
-  if (sunP) drawSun(ctx, cx + sunP.x * scale, cy + sunP.y * scale);
+  // Sun — drawn last, on top, always at center
+  if (sunProj) drawSun(ctx, cx + sunProj.x * scale, cy + sunProj.y * scale);
 }
