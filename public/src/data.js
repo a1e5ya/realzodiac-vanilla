@@ -24,7 +24,7 @@ export async function loadConstellations() {
   const geojson = await res.json();
   // Map to { id, lines: [[[ra,dec], [ra,dec], ...], ...] }
   constellations = geojson.features.map(f => ({
-    id:    f.id,
+    id:    f.id ?? f.properties?.id,
     lines: f.geometry.coordinates
   }));
   return constellations;

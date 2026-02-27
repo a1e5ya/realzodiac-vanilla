@@ -9,6 +9,10 @@ export function project(ra, dec, centerRA) {
   if (dra > 180) dra -= 360;
   if (dra < -180) dra += 360;
 
+  // Points more than 90° from center are on the back half — don't draw them.
+  // This also prevents the normalization seam from producing screen-wide lines.
+  if (Math.abs(dra) > 90) return null;
+
   // Simple angular mapping - we're inside looking out
   // X = RA offset, Y = Dec
   return {

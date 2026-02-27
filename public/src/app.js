@@ -11,7 +11,6 @@ import { drawStarMap } from "./rendering.js";
 let starData, constData, canvas, ctx, currentDate;
 let lat = 60.17, lon = 24.94;
 let locationName = "Helsinki, Finland";
-let dragOffset = 0; // horizontal drag offset for map rotation
 
 const PLANET_KEYS = ["mercury","venus","mars","jupiter","saturn","uranus","neptune"];
 
@@ -36,63 +35,157 @@ function buildStarmap() {
   if (!ph) return;
 
   ph.innerHTML = `
+    <style>
+      .smc-bar {
+        position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(8,8,18,0.96); backdrop-filter: blur(12px);
+        border: 1px solid rgba(212,175,55,0.18); border-radius: 14px;
+        padding: 12px 18px; display: flex; flex-direction: row;
+        align-items: center; justify-content: center; gap: 18px; max-width: 95%; z-index: 10;
+      }
+      .smc-group { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+      .smc-label {
+        font-size: 9px; color: rgba(212,175,55,0.4); text-transform: uppercase;
+        letter-spacing: 1.5px; font-family: 'Zain', sans-serif; user-select: none;
+      }
+      .smc-fields { display: flex; align-items: center; gap: 3px; }
+      .smc-sep { color: #444; font-size: 15px; padding: 0 1px; user-select: none; }
+      .smc-spinner { display: flex; flex-direction: column; align-items: center; }
+      .smc-btn {
+        width: 32px; height: 18px; background: rgba(212,175,55,0.08);
+        border: 1px solid rgba(212,175,55,0.2); cursor: pointer;
+        color: rgba(212,175,55,0.65); font-size: 9px;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s, color 0.15s; font-family: 'Zain', sans-serif;
+      }
+      .smc-btn:hover { background: rgba(212,175,55,0.22); color: #d4af37; }
+      .smc-btn-wide { width: 50px; }
+      .smc-btn-t { border-radius: 5px 5px 0 0; }
+      .smc-btn-b { border-radius: 0 0 5px 5px; }
+      .smc-input {
+        width: 32px; height: 30px; background: rgba(255,255,255,0.04);
+        color: #f4e4b7; border: 1px solid rgba(212,175,55,0.18);
+        border-top: none; border-bottom: none;
+        text-align: center; font-size: 13px; font-family: 'Zain', sans-serif;
+      }
+      .smc-input:focus { outline: none; background: rgba(212,175,55,0.06); }
+      .smc-input-wide { width: 50px; }
+      .smc-div { width: 1px; height: 58px; background: rgba(212,175,55,0.1); flex-shrink: 0; }
+      .smc-loc-wrap { position: relative; }
+      .smc-loc-input {
+        width: 158px; height: 30px; background: rgba(255,255,255,0.04);
+        color: #f4e4b7; border: 1px solid rgba(212,175,55,0.18); border-radius: 7px;
+        padding: 0 10px; font-size: 12px; font-family: 'Zain', sans-serif;
+        transition: border-color 0.15s;
+      }
+      .smc-loc-input:focus { outline: none; border-color: rgba(212,175,55,0.45); }
+      .smc-loc-input::placeholder { color: rgba(244,228,183,0.3); }
+      .smc-loc-results {
+        position: absolute; bottom: calc(100% + 6px); left: 0; width: 100%;
+        max-height: 160px; overflow-y: auto; background: #0e0e1c;
+        border: 1px solid rgba(212,175,55,0.2); border-radius: 8px; display: none; z-index: 20;
+      }
+      .smc-loc-item {
+        padding: 9px 12px; cursor: pointer; font-size: 12px; color: #f4e4b7;
+        border-bottom: 1px solid rgba(212,175,55,0.08); font-family: 'Zain', sans-serif;
+        transition: background 0.12s;
+      }
+      .smc-loc-item:last-child { border-bottom: none; }
+      .smc-loc-item:hover { background: rgba(212,175,55,0.1); }
+      .smc-actions { display: flex; flex-direction: column; gap: 6px; }
+      .smc-action-btn {
+        height: 28px; background: rgba(212,175,55,0.08); color: #d4af37;
+        border: 1px solid rgba(212,175,55,0.25); border-radius: 7px;
+        padding: 0 14px; font-size: 12px; font-family: 'Zain', sans-serif;
+        cursor: pointer; white-space: nowrap; transition: background 0.15s;
+      }
+      .smc-action-btn:hover { background: rgba(212,175,55,0.2); }
+
+      @media (max-width: 620px) {
+        .smc-bar {
+          flex-wrap: wrap;
+          width: calc(100% - 24px); gap: 10px 16px; padding: 12px 16px; bottom: 12px;
+        }
+        /* Divider between TIME and LOCATION becomes a full-width row break */
+        .smc-bar > .smc-div:nth-child(4) { flex-basis: 100%; height: 1px; }
+        /* Divider between LOCATION and ACTIONS not needed on mobile */
+        .smc-bar > .smc-div:nth-child(6) { display: none; }
+        /* Location group fills remaining space on row 2 */
+        .smc-bar > .smc-group:nth-child(5) { flex: 1; }
+        .smc-loc-wrap { width: 100%; }
+        .smc-loc-input { width: 100%; }
+        .smc-actions { align-items: stretch; }
+      }
+    </style>
+
     <div style="position:relative; width:100%; height:80vh; min-height:500px;">
       <canvas id="starmap-canvas" style="width:100%; height:100%; border-radius:12px; background:#0a0a14; cursor:grab;"></canvas>
-      
-      <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-        background:rgba(10,10,20,0.95); backdrop-filter:blur(10px); border:1px solid rgba(212,175,55,0.2);
-        border-radius:12px; padding:12px; display:flex; gap:10px; flex-wrap:wrap; max-width:95%; justify-content:center;">
-        
-        <!-- Date controls -->
-        <div style="display:flex; gap:4px; align-items:center;">
-          <div style="display:flex; flex-direction:column; align-items:center;">
-            <button id="day-up" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:4px 4px 0 0; cursor:pointer; color:#d4af37; font-size:10px;">▲</button>
-            <input type="text" id="birth-day" style="width:32px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); text-align:center; font-size:13px; font-family:'Zain',sans-serif;">
-            <button id="day-down" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:0 0 4px 4px; cursor:pointer; color:#d4af37; font-size:10px;">▼</button>
-          </div>
-          <span style="color:#666; margin-top:20px;">/</span>
-          <div style="display:flex; flex-direction:column; align-items:center;">
-            <button id="month-up" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:4px 4px 0 0; cursor:pointer; color:#d4af37; font-size:10px;">▲</button>
-            <input type="text" id="birth-month" style="width:32px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); text-align:center; font-size:13px; font-family:'Zain',sans-serif;">
-            <button id="month-down" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:0 0 4px 4px; cursor:pointer; color:#d4af37; font-size:10px;">▼</button>
-          </div>
-          <span style="color:#666; margin-top:20px;">/</span>
-          <div style="display:flex; flex-direction:column; align-items:center;">
-            <button id="year-up" style="width:52px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:4px 4px 0 0; cursor:pointer; color:#d4af37; font-size:10px;">▲</button>
-            <input type="text" id="birth-year" style="width:52px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); text-align:center; font-size:13px; font-family:'Zain',sans-serif;">
-            <button id="year-down" style="width:52px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:0 0 4px 4px; cursor:pointer; color:#d4af37; font-size:10px;">▼</button>
+
+      <div class="smc-bar">
+
+        <!-- DATE -->
+        <div class="smc-group">
+          <span class="smc-label">Date</span>
+          <div class="smc-fields">
+            <div class="smc-spinner">
+              <button id="day-up" class="smc-btn smc-btn-t">▲</button>
+              <input type="text" id="birth-day" class="smc-input">
+              <button id="day-down" class="smc-btn smc-btn-b">▼</button>
+            </div>
+            <span class="smc-sep">/</span>
+            <div class="smc-spinner">
+              <button id="month-up" class="smc-btn smc-btn-t">▲</button>
+              <input type="text" id="birth-month" class="smc-input">
+              <button id="month-down" class="smc-btn smc-btn-b">▼</button>
+            </div>
+            <span class="smc-sep">/</span>
+            <div class="smc-spinner">
+              <button id="year-up" class="smc-btn smc-btn-t smc-btn-wide">▲</button>
+              <input type="text" id="birth-year" class="smc-input smc-input-wide">
+              <button id="year-down" class="smc-btn smc-btn-b smc-btn-wide">▼</button>
+            </div>
           </div>
         </div>
 
-        <!-- Time controls -->
-        <div style="display:flex; gap:4px; align-items:center;">
-          <div style="display:flex; flex-direction:column; align-items:center;">
-            <button id="hour-up" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:4px 4px 0 0; cursor:pointer; color:#d4af37; font-size:10px;">▲</button>
-            <input type="text" id="birth-hour" style="width:32px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); text-align:center; font-size:13px; font-family:'Zain',sans-serif;">
-            <button id="hour-down" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:0 0 4px 4px; cursor:pointer; color:#d4af37; font-size:10px;">▼</button>
-          </div>
-          <span style="color:#666; margin-top:20px;">:</span>
-          <div style="display:flex; flex-direction:column; align-items:center;">
-            <button id="min-up" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:4px 4px 0 0; cursor:pointer; color:#d4af37; font-size:10px;">▲</button>
-            <input type="text" id="birth-min" style="width:32px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); text-align:center; font-size:13px; font-family:'Zain',sans-serif;">
-            <button id="min-down" style="width:32px; height:20px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.3); border-radius:0 0 4px 4px; cursor:pointer; color:#d4af37; font-size:10px;">▼</button>
+        <div class="smc-div"></div>
+
+        <!-- TIME -->
+        <div class="smc-group">
+          <span class="smc-label">Time</span>
+          <div class="smc-fields">
+            <div class="smc-spinner">
+              <button id="hour-up" class="smc-btn smc-btn-t">▲</button>
+              <input type="text" id="birth-hour" class="smc-input">
+              <button id="hour-down" class="smc-btn smc-btn-b">▼</button>
+            </div>
+            <span class="smc-sep">:</span>
+            <div class="smc-spinner">
+              <button id="min-up" class="smc-btn smc-btn-t">▲</button>
+              <input type="text" id="birth-min" class="smc-input">
+              <button id="min-down" class="smc-btn smc-btn-b">▼</button>
+            </div>
           </div>
         </div>
 
-        <!-- Location -->
-        <div style="position:relative;">
-          <input type="text" id="location-search" placeholder="Search location..." 
-            style="width:160px; height:28px; background:#111; color:#f4e4b7; border:1px solid rgba(212,175,55,0.3); border-radius:6px; padding:0 8px; font-size:12px; font-family:'Zain',sans-serif;">
-          <div id="location-results" style="position:absolute; bottom:100%; left:0; width:100%; max-height:150px; overflow-y:auto; background:#111; border:1px solid rgba(212,175,55,0.3); border-radius:6px; margin-bottom:4px; display:none;"></div>
+        <div class="smc-div"></div>
+
+        <!-- LOCATION -->
+        <div class="smc-group">
+          <span class="smc-label">Location</span>
+          <div class="smc-loc-wrap">
+            <input type="text" id="location-search" placeholder="Search city..." class="smc-loc-input" autocomplete="off">
+            <div id="location-results" class="smc-loc-results"></div>
+          </div>
         </div>
 
-        <button id="btn-locate" style="height:28px; background:rgba(212,175,55,0.15); color:#d4af37;
-          border:1px solid rgba(212,175,55,0.4); border-radius:6px; padding:0 12px;
-          font-size:12px; font-family:'Zain',sans-serif; cursor:pointer; white-space:nowrap;">⦿ Locate</button>
-        
-        <button id="btn-now" style="height:28px; background:rgba(212,175,55,0.15); color:#d4af37;
-          border:1px solid rgba(212,175,55,0.4); border-radius:6px; padding:0 12px;
-          font-size:12px; font-family:'Zain',sans-serif; cursor:pointer;">Now</button>
+        <div class="smc-div"></div>
+
+        <!-- ACTIONS -->
+        <div class="smc-actions">
+          <button id="btn-locate" class="smc-action-btn">⦿ Locate</button>
+          <button id="btn-now" class="smc-action-btn">⏱ Now</button>
+        </div>
+
       </div>
     </div>`;
 
@@ -101,17 +194,17 @@ function buildStarmap() {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  // Date/time button controls
-  document.getElementById("day-up").addEventListener("click", () => adjustDate('day', 1));
-  document.getElementById("day-down").addEventListener("click", () => adjustDate('day', -1));
-  document.getElementById("month-up").addEventListener("click", () => adjustDate('month', 1));
-  document.getElementById("month-down").addEventListener("click", () => adjustDate('month', -1));
-  document.getElementById("year-up").addEventListener("click", () => adjustDate('year', 1));
-  document.getElementById("year-down").addEventListener("click", () => adjustDate('year', -1));
-  document.getElementById("hour-up").addEventListener("click", () => adjustDate('hour', 1));
-  document.getElementById("hour-down").addEventListener("click", () => adjustDate('hour', -1));
-  document.getElementById("min-up").addEventListener("click", () => adjustDate('minute', 1));
-  document.getElementById("min-down").addEventListener("click", () => adjustDate('minute', -1));
+  // Date/time button controls (hold-to-repeat)
+  bindHoldButton("day-up",    () => adjustDate('day', 1));
+  bindHoldButton("day-down",  () => adjustDate('day', -1));
+  bindHoldButton("month-up",  () => adjustDate('month', 1));
+  bindHoldButton("month-down",() => adjustDate('month', -1));
+  bindHoldButton("year-up",   () => adjustDate('year', 1));
+  bindHoldButton("year-down", () => adjustDate('year', -1));
+  bindHoldButton("hour-up",   () => adjustDate('hour', 1));
+  bindHoldButton("hour-down", () => adjustDate('hour', -1));
+  bindHoldButton("min-up",    () => adjustDate('minute', 1));
+  bindHoldButton("min-down",  () => adjustDate('minute', -1));
 
   // Manual input changes
   document.getElementById("birth-day").addEventListener("input", onManualInput);
@@ -132,6 +225,22 @@ function buildStarmap() {
 
   // Dragging
   setupDrag();
+}
+
+// ─── Hold-to-repeat button helper ───────────────────────────────────────────
+function bindHoldButton(id, fn) {
+  let holdTimer, repeatTimer;
+  const el = document.getElementById(id);
+  const start = () => {
+    fn();
+    holdTimer = setTimeout(() => { repeatTimer = setInterval(fn, 80); }, 400);
+  };
+  const stop = () => { clearTimeout(holdTimer); clearInterval(repeatTimer); };
+  el.addEventListener("mousedown", start);
+  el.addEventListener("mouseup", stop);
+  el.addEventListener("mouseleave", stop);
+  el.addEventListener("touchstart", e => { e.preventDefault(); start(); });
+  el.addEventListener("touchend", stop);
 }
 
 // ─── Date adjustments ───────────────────────────────────────────────────────
@@ -186,12 +295,10 @@ async function searchLocation(query) {
     const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=en`);
     const data = await res.json();
     
-    resultsDiv.innerHTML = data.features.map((f, i) => {
+    resultsDiv.innerHTML = data.features.map((f) => {
       const name = [f.properties.name, f.properties.city, f.properties.country]
         .filter(Boolean).join(', ');
-      return `<div style="padding:8px; cursor:pointer; border-bottom:1px solid rgba(212,175,55,0.1); font-size:11px; color:#f4e4b7;" 
-        onmouseover="this.style.background='rgba(212,175,55,0.1)'" 
-        onmouseout="this.style.background='transparent'"
+      return `<div class="smc-loc-item"
         onclick="window.selectLocation(${f.geometry.coordinates[1]}, ${f.geometry.coordinates[0]}, '${name.replace(/'/g, "\\'")}')">
         ${name}
       </div>`;
@@ -237,19 +344,21 @@ function onLocate() {
 function setupDrag() {
   let isDragging = false;
   let startX = 0;
-  let startOffset = 0;
+  let startDate = null;
+  const MS_PER_PX = 0.1 * 86400000; // 0.1 days per pixel
 
   canvas.addEventListener("mousedown", (e) => {
     isDragging = true;
     startX = e.clientX;
-    startOffset = dragOffset;
+    startDate = new Date(currentDate);
     canvas.style.cursor = "grabbing";
   });
 
   window.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
     const dx = e.clientX - startX;
-    dragOffset = startOffset + dx * 0.1; // adjust sensitivity
+    currentDate = new Date(startDate.getTime() - dx * MS_PER_PX);
+    updateDateInputs();
     update();
   });
 
@@ -262,13 +371,14 @@ function setupDrag() {
   canvas.addEventListener("touchstart", (e) => {
     isDragging = true;
     startX = e.touches[0].clientX;
-    startOffset = dragOffset;
+    startDate = new Date(currentDate);
   });
 
   canvas.addEventListener("touchmove", (e) => {
     if (!isDragging) return;
     const dx = e.touches[0].clientX - startX;
-    dragOffset = startOffset + dx * 0.1;
+    currentDate = new Date(startDate.getTime() - dx * MS_PER_PX);
+    updateDateInputs();
     update();
     e.preventDefault();
   });
@@ -278,29 +388,168 @@ function setupDrag() {
   });
 }
 
+// ─── Sign name → cathedral filename ─────────────────────────────────────────
+function signToCathedral(name) {
+  if (name.toLowerCase() === 'capricorn') return 'capricornus';
+  return name.toLowerCase();
+}
+
 // ─── Build comparison cards ─────────────────────────────────────────────────
 function buildComparison() {
   const ph = document.querySelector("#comparison .placeholder");
   if (!ph) return;
 
   ph.innerHTML = `
-    <div style="display:flex; gap:24px; justify-content:center; flex-wrap:wrap; max-width:800px; margin:0 auto;">
-      <div style="flex:1; min-width:240px; background:rgba(20,20,40,0.8);
-            border:1px solid rgba(212,175,55,0.2); border-radius:16px; padding:32px; text-align:center;">
-        <div style="color:rgba(244,228,183,0.5); font-size:14px; text-transform:uppercase;
-              letter-spacing:2px; margin-bottom:16px;">Astrology Says</div>
-        <div id="tropical-symbol" style="font-size:48px; margin-bottom:8px;"></div>
-        <div id="tropical-name"   style="font-family:'Waterfall',cursive; font-size:36px; color:#f4e4b7;"></div>
-        <div style="color:rgba(244,228,183,0.4); font-size:13px; margin-top:12px;">Based on 2,000-year-old positions</div>
+    <style>
+      .cmp-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding: 20px 16px 40px;
+        box-sizing: border-box;
+      }
+      .cmp-card {
+        position: relative;
+        border-radius: 18px;
+        overflow: hidden;
+        flex-shrink: 0;
+        aspect-ratio: 3 / 4;
+      }
+      /* Background image layer — zooms on hover */
+      .cmp-bg {
+        position: absolute;
+        inset: -2px;
+        background-size: cover;
+        background-position: center top;
+        border-radius: 20px;
+        z-index: 0;
+        transition: transform 0.85s ease;
+      }
+      .cmp-card:hover .cmp-bg { transform: scale(1.07); }
+      /* Gradient overlay */
+      .cmp-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        border-radius: 18px;
+      }
+      .cmp-card.astro-old::before {
+        background: linear-gradient(to bottom,
+          rgba(0,0,0,0.4) 0%,
+          rgba(5,4,18,0.58) 55%,
+          rgba(5,4,18,0.95) 100%);
+      }
+      .cmp-card.astro-real::before {
+        background: linear-gradient(to bottom,
+          rgba(0,0,0,0.18) 0%,
+          rgba(5,4,18,0.36) 50%,
+          rgba(5,4,18,0.9) 100%);
+      }
+      .cmp-card-inner {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 0 16px 22px;
+      }
+      /* Astrology card — faded, visually suppressed */
+      .cmp-card.astro-old {
+        width: 82%;
+        max-width: 290px;
+        filter: saturate(0.3) brightness(0.58);
+        border: 1px solid rgba(120,110,90,0.22);
+        z-index: 1;
+        margin-bottom: -70px;
+      }
+      /* Astronomy card — dominant, animated */
+      .cmp-card.astro-real {
+        width: 96%;
+        max-width: 345px;
+        border: 1.5px solid rgba(212,175,55,0.55);
+        z-index: 2;
+        animation: cmp-float 10s ease-in-out infinite,
+                   cmp-glow  10s ease-in-out infinite;
+      }
+      @keyframes cmp-float {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-9px); }
+      }
+      @keyframes cmp-glow {
+        0%, 100% { box-shadow: 0 0 38px rgba(212,175,55,0.18), 0 22px 52px rgba(0,0,0,0.55); }
+        50%       { box-shadow: 0 0 66px rgba(212,175,55,0.36), 0 32px 70px rgba(0,0,0,0.65); }
+      }
+      .cmp-bottom { text-align: center; }
+      .cmp-name {
+        font-family: 'Waterfall', cursive;
+        font-size: 58px;
+        line-height: 1;
+        margin-bottom: 10px;
+      }
+      .astro-old .cmp-name { color: rgba(200,183,148,0.62); }
+      .astro-real .cmp-name {
+        color: #f4e4b7;
+        text-shadow: 0 0 26px rgba(212,175,55,0.42);
+      }
+      .cmp-svg {
+        width: 52px;
+        height: 52px;
+        display: block;
+        margin: 0 auto;
+      }
+      .astro-old .cmp-svg { filter: invert(1); opacity: 0.32; }
+      .astro-real .cmp-svg {
+        filter: invert(76%) sepia(54%) saturate(438%) hue-rotate(5deg) brightness(98%);
+        opacity: 0.88;
+      }
+      @media (min-width: 640px) {
+        .cmp-wrap {
+          flex-direction: row;
+          align-items: flex-end;
+          justify-content: center;
+          gap: 0;
+          padding: 28px 20px 40px;
+        }
+        .cmp-card.astro-old {
+          width: 220px;
+          max-width: 220px;
+          margin-bottom: 0;
+          margin-right: -14px;
+          transform: scale(0.88);
+          transform-origin: right bottom;
+        }
+        .cmp-card.astro-real {
+          width: 285px;
+          max-width: 285px;
+        }
+      }
+    </style>
+
+    <div class="cmp-wrap">
+      <!-- Astrology card (tropical — old, faded, suppressed) -->
+      <div class="cmp-card astro-old" id="cmp-astrology">
+        <div class="cmp-bg" id="cmp-astrology-bg"></div>
+        <div class="cmp-card-inner">
+          <div class="cmp-bottom">
+            <div id="tropical-name" class="cmp-name">—</div>
+            <img id="tropical-svg" class="cmp-svg" src="" alt="">
+          </div>
+        </div>
       </div>
-      <div style="flex:1; min-width:240px; background:rgba(20,20,40,0.8);
-            border:1px solid rgba(212,175,55,0.5); border-radius:16px; padding:32px; text-align:center;
-            box-shadow:0 0 30px rgba(212,175,55,0.1);">
-        <div style="color:#d4af37; font-size:14px; text-transform:uppercase;
-              letter-spacing:2px; margin-bottom:16px;">Astronomy Says</div>
-        <div id="astro-symbol" style="font-size:48px; color:#d4af37; margin-bottom:8px;"></div>
-        <div id="astro-name"   style="font-family:'Waterfall',cursive; font-size:36px; color:#d4af37;"></div>
-        <div style="color:rgba(212,175,55,0.5); font-size:13px; margin-top:12px;">Where the Sun actually was</div>
+
+      <!-- Astronomy card (real — dominant, gold-accented) -->
+      <div class="cmp-card astro-real" id="cmp-astronomy">
+        <div class="cmp-bg" id="cmp-astronomy-bg"></div>
+        <div class="cmp-card-inner">
+          <div class="cmp-bottom">
+            <div id="astro-name" class="cmp-name">—</div>
+            <img id="astro-svg" class="cmp-svg" src="" alt="">
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -315,10 +564,20 @@ function update() {
   const astro   = CONSTELLATION_NAMES[astroId];
 
   // Update comparison cards
-  document.getElementById("tropical-symbol").textContent = tropical.symbol;
-  document.getElementById("tropical-name").textContent   = tropical.name;
-  document.getElementById("astro-symbol").textContent    = astro.symbol;
-  document.getElementById("astro-name").textContent      = astro.common;
+  const tropName  = tropical.name;
+  const astroName = astro.common;
+
+  document.getElementById("tropical-name").textContent = tropName;
+  document.getElementById("cmp-astrology-bg").style.backgroundImage =
+    `url('/assets/cathedral/${signToCathedral(tropName)}.webp')`;
+  document.getElementById("tropical-svg").src =
+    `/assets/signs/${tropName.toLowerCase()}.svg`;
+
+  document.getElementById("astro-name").textContent = astroName;
+  document.getElementById("cmp-astronomy-bg").style.backgroundImage =
+    `url('/assets/cathedral/${signToCathedral(astroName)}.webp')`;
+  document.getElementById("astro-svg").src =
+    `/assets/signs/${astroName.toLowerCase()}.svg`;
 
   // Compute celestial bodies
   const moon = getMoon(currentDate);
@@ -340,7 +599,7 @@ function update() {
     drawStarMap(ctx, {
       stars: starData,
       constellations: constData,
-      sunRA: sun.ra + dragOffset,
+      sunRA: sun.ra,
       sunDec: sun.dec,
       activeConstId: astroId,
       moon, planets, specials, altitude
