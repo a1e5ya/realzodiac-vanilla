@@ -259,84 +259,48 @@
       margin: 0 auto;
     }
 
-    /* ── Hero Intro Assets — appear before scroll text ─────────────── */
+    /* ── Hero parallax background assets ───────────────────────────── */
     #hero-intro {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 3;
-      overflow: hidden;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 3; overflow: hidden;
+      opacity: 0;
     }
 
-    /* Constellation — center, full presence, screen blend with star field */
-    #hi-const {
-      position: absolute;
-      width: 65%;
-      max-width: 720px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      mix-blend-mode: screen;
-      opacity: 0.85;
-      animation: hi-enter 2.0s ease-out both, hi-float-c 28s ease-in-out infinite;
-    }
-
-    /* Cathedral — left side, portrait, natural colors */
-    #hi-cath-wrap {
-      position: absolute;
-      left: 3%;
-      top: 50%;
+    /* Pisces cathedral — left side, tall portrait */
+    #hi-pw2 { position: absolute; left: 2%; top: 50%; }
+    #hi-pw2 img {
+      display: block; height: 72vh; width: auto;
+      border-radius: 10px; opacity: 0.72;
       transform: translateY(-50%);
-    }
-    #hi-cath {
-      display: block;
-      height: 72vh;
-      width: auto;
-      border-radius: 10px;
-      opacity: 0.72;
-      animation: hi-enter 1.6s ease-out both 0.3s, hi-float-l 22s ease-in-out infinite;
+      animation: hi-bob 24s ease-in-out infinite 3s;
     }
 
-    /* Sign glyph — right side, golden */
-    #hi-sign-wrap {
-      position: absolute;
-      right: 7%;
-      top: 50%;
+    /* Scorpio sign — right side, glowing gold */
+    #hi-pw3 { position: absolute; right: 6%; top: 48%; }
+    #hi-pw3 img {
+      display: block; width: 148px;
       transform: translateY(-50%);
-    }
-    #hi-sign {
-      display: block;
-      width: 160px;
-      filter: invert(1) sepia(1) saturate(4) hue-rotate(5deg) brightness(1.8);
-      opacity: 0.60;
-      animation: hi-enter 1.8s ease-out both 0.6s, hi-float-r 18s ease-in-out infinite,
-                 hi-sign-pulse 10s ease-in-out infinite 1s;
+      animation: hi-bob 20s ease-in-out infinite, hi-sign-pulse 11s ease-in-out infinite;
     }
 
-    @keyframes hi-enter {
-      from { opacity: 0; transform: scale(0.97); }
-      to   { opacity: 1; transform: scale(1); }
+    /* Taurus constellation — lower right, smaller */
+    #hi-pw4 { position: absolute; right: 14%; top: 68%; }
+    #hi-pw4 img {
+      width: 26vw; max-width: 300px;
+      mix-blend-mode: screen; opacity: 0.70;
+      animation: hi-bob 27s ease-in-out infinite 5s;
     }
 
-    /* Float animations — only translateY so they don't fight the centering transform */
-    @keyframes hi-float-c {
-      0%,100% { margin-top: 0px;   }
-      50%     { margin-top: -16px; }
+    /* Float via margin-top so it doesn't fight the centering transform */
+    @keyframes hi-bob {
+      0%,100% { margin-top: 0;    }
+      50%     { margin-top: -18px;}
     }
-    @keyframes hi-float-l {
-      0%,100% { transform: translateY(-50%) rotate(0deg);     }
-      38%     { transform: translateY(calc(-50% - 18px)) rotate(1.2deg);  }
-      72%     { transform: translateY(calc(-50% - 7px))  rotate(-0.8deg); }
-    }
-    @keyframes hi-float-r {
-      0%,100% { transform: translateY(-50%) rotate(0deg);      }
-      45%     { transform: translateY(calc(-50% - 22px)) rotate(-1.5deg); }
-      80%     { transform: translateY(calc(-50% - 10px)) rotate(0.9deg);  }
-    }
+
     @keyframes hi-sign-pulse {
-      0%,100% { opacity: 0.60; filter: invert(1) sepia(1) saturate(4.0) hue-rotate(5deg)  brightness(1.8); }
-      50%     { opacity: 0.85; filter: invert(1) sepia(1) saturate(6.0) hue-rotate(12deg) brightness(2.4); }
+      0%,100% { filter: invert(1) sepia(1) saturate(4.0) hue-rotate(5deg)  brightness(1.8); opacity: 0.62; }
+      50%     { filter: invert(1) sepia(1) saturate(6.5) hue-rotate(13deg) brightness(2.6); opacity: 0.88; }
     }
 
     /* ── Intro text — cathedral glass palette ───────────────────── */
@@ -398,16 +362,9 @@
     <canvas id="constellation-canvas"></canvas>
 
     <div id="hero-intro">
-      <!-- Constellation WEBP — center, blends with star field -->
-      <img id="hi-const" src="/assets/constellations/leo.webp" alt="">
-      <!-- Cathedral WEBP — left side -->
-      <div id="hi-cath-wrap">
-        <img id="hi-cath" src="/assets/cathedral/pisces.webp" alt="">
-      </div>
-      <!-- Sign SVG — right side, glowing gold -->
-      <div id="hi-sign-wrap">
-        <img id="hi-sign" src="/assets/signs/scorpio.svg" alt="">
-      </div>
+      <div id="hi-pw2"><img src="/assets/cathedral/pisces.webp" alt=""></div>
+      <div id="hi-pw3"><img src="/assets/signs/scorpio.svg" alt=""></div>
+      <div id="hi-pw4"><img src="/assets/constellations/aquarius.webp" alt=""></div>
     </div>
 
     <div class="section" data-index="0">
@@ -656,50 +613,46 @@
 
       const w = constCanvas.width;
 
-      // Timeline:
-      // 0.00-0.15: Title
-      // 0.15-0.30: Subtitle
-      // 0.30-0.50: Leo appears line-by-line
-      // 0.50-0.60: Leo drifts left & fades
-      // 0.60-0.80: Cancer appears line-by-line
-      // 0.80-0.90: Cancer drifts left & dissolves
-      // 0.90-1.00: CTA appears
+      // New timeline (more spread, gaps between texts for assets):
+      // 0.00-0.22: Title
+      // 0.22-0.30: Gap A (assets)
+      // 0.30-0.48: Subtitle
+      // 0.48-0.56: Gap B (assets)
+      // 0.56-0.77: Leo draws, holds, drifts
+      // 0.74-0.80: Gap C (assets)
+      // 0.80-0.94: Cancer appears, holds, zooms
+      // 0.92-0.96: Gap D (assets)
+      // 0.96-1.00: CTA
 
-      // LEO phase - ANIMATED line drawing with pause
-      if (scrollProgress >= 0.30 && scrollProgress < 0.62) {
-        if (scrollProgress < 0.50) {
-          // Leo appearing with animated line drawing
-          const leoProgress = (scrollProgress - 0.30) / 0.20;
+      // LEO phase
+      if (scrollProgress >= 0.56 && scrollProgress < 0.77) {
+        if (scrollProgress < 0.68) {
+          const leoProgress = (scrollProgress - 0.56) / 0.12;
           constCtx.globalAlpha = 1;
           drawConstellation(leoConstellation, leoProgress, 0, true, 1);
-        } else if (scrollProgress < 0.54) {
-          // Leo complete, holding still (pause)
+        } else if (scrollProgress < 0.72) {
           constCtx.globalAlpha = 1;
           drawConstellation(leoConstellation, 1, 0, false, 1);
         } else {
-          // Leo drifting left & fading
-          const driftProgress = (scrollProgress - 0.54) / 0.08;
+          const driftProgress = (scrollProgress - 0.72) / 0.05;
           const driftAmount = -w * 0.4 * driftProgress;
           constCtx.globalAlpha = 1 - driftProgress;
           drawConstellation(leoConstellation, 1, driftAmount, false, 1);
         }
       }
 
-      // CANCER phase - appears from RIGHT, moves to center (starts earlier for smoother transition)
-      if (scrollProgress >= 0.60 && scrollProgress < 0.90) {
-        if (scrollProgress < 0.70) {
-          // Cancer appearing from right, moving to center
-          const moveProgress = (scrollProgress - 0.60) / 0.10;
-          const driftAmount = w * 0.4 * (1 - moveProgress); // Start from right
-          constCtx.globalAlpha = moveProgress; // Fade in as it moves
+      // CANCER phase
+      if (scrollProgress >= 0.80 && scrollProgress < 0.94) {
+        if (scrollProgress < 0.86) {
+          const moveProgress = (scrollProgress - 0.80) / 0.06;
+          const driftAmount = w * 0.4 * (1 - moveProgress);
+          constCtx.globalAlpha = moveProgress;
           drawConstellation(cancerConstellation, 1, driftAmount, false, 1);
-        } else if (scrollProgress < 0.75) {
-          // Cancer in center, holding still
+        } else if (scrollProgress < 0.90) {
           constCtx.globalAlpha = 1;
           drawConstellation(cancerConstellation, 1, 0, false, 1);
         } else {
-          // Cancer zooming towards us & dissolving
-          const zoomProgress = (scrollProgress - 0.75) / 0.15;
+          const zoomProgress = (scrollProgress - 0.90) / 0.04;
           const scale = 1 + zoomProgress * 0.5;
           constCtx.globalAlpha = 1 - zoomProgress;
           drawConstellation(cancerConstellation, 1, 0, false, scale);
@@ -722,45 +675,78 @@
 
       document.getElementById('progress-fill').style.width = `${scrollProgress * 100}%`;
 
-      // Title (0.00-0.20)
-      if (scrollProgress < 0.15) {
-        sections[0].style.opacity = Math.min(scrollProgress / 0.10, 1);
+      // Title: fade in 0.03-0.10, hold 0.10-0.17, fade out 0.17-0.22
+      if (scrollProgress < 0.03) {
+        sections[0].style.opacity = 0;
+      } else if (scrollProgress < 0.10) {
+        sections[0].style.opacity = (scrollProgress - 0.03) / 0.07;
+      } else if (scrollProgress < 0.17) {
+        sections[0].style.opacity = 1;
       } else {
-        sections[0].style.opacity = Math.max(1 - (scrollProgress - 0.15) / 0.05, 0);
+        sections[0].style.opacity = Math.max(0, 1 - (scrollProgress - 0.17) / 0.05);
       }
 
-      // Subtitle (0.15-0.35)
-      if (scrollProgress < 0.15) {
+      // Subtitle: fade in 0.30-0.37, hold 0.37-0.43, fade out 0.43-0.48
+      if (scrollProgress < 0.30) {
         sections[1].style.opacity = 0;
-      } else if (scrollProgress < 0.25) {
-        sections[1].style.opacity = (scrollProgress - 0.15) / 0.10;
-      } else if (scrollProgress < 0.30) {
+      } else if (scrollProgress < 0.37) {
+        sections[1].style.opacity = (scrollProgress - 0.30) / 0.07;
+      } else if (scrollProgress < 0.43) {
         sections[1].style.opacity = 1;
       } else {
-        sections[1].style.opacity = Math.max(1 - (scrollProgress - 0.30) / 0.05, 0);
+        sections[1].style.opacity = Math.max(0, 1 - (scrollProgress - 0.43) / 0.05);
       }
 
-      // CTA (0.85-1.00, smooth dissolve)
-      if (scrollProgress >= 0.85 && scrollProgress < 0.92) {
-        cta.style.opacity = (scrollProgress - 0.85) / 0.07;
-      } else if (scrollProgress >= 0.92 && scrollProgress < 1.00) {
-        cta.style.opacity = 1 - ((scrollProgress - 0.92) / 0.08);
-      } else {
+      // CTA: fade in 0.96-0.99, fade out 0.99-1.00
+      if (scrollProgress < 0.96) {
         cta.style.opacity = 0;
+      } else if (scrollProgress < 0.99) {
+        cta.style.opacity = (scrollProgress - 0.96) / 0.03;
+      } else {
+        cta.style.opacity = Math.max(0, 1 - (scrollProgress - 0.99) / 0.01);
       }
 
       drawConstellations(scrollProgress);
+    }
 
-      // Intro assets: visible at rest, fade out before scroll text appears
-      const heroIntro = document.getElementById('hero-intro');
-      const introFade = scrollProgress < 0.03
-        ? 1
-        : Math.max(0, 1 - (scrollProgress - 0.03) / 0.09);
-      heroIntro.style.opacity = introFade;
+    // Simple parallax background — all assets visible throughout hero, different scroll speeds
+    var hiStartTime = Date.now();
+    var hiEl = null;
+
+    function updateIntroAssets() {
+      if (!hiEl) {
+        hiEl = {
+          wrap: document.getElementById('hero-intro'),
+          pw:   [
+            document.getElementById('hi-pw2'),
+            document.getElementById('hi-pw3'),
+            document.getElementById('hi-pw4')
+          ]
+        };
+        if (!hiEl.wrap) { hiEl = null; return; }
+      }
+
+      var st  = window.scrollY;
+      var max = document.getElementById('scroll-container').offsetHeight - window.innerHeight;
+      var p   = Math.min(st / max, 1);
+
+      // Fade in over 1.5s on load, fade out in final 12% of hero
+      var tf   = Math.min((Date.now() - hiStartTime) / 1500, 1);
+      var fade = p > 0.88 ? Math.max(0, 1 - (p - 0.88) / 0.10) : 1;
+      hiEl.wrap.style.opacity = (tf * fade).toFixed(3);
+
+      // Each layer scrolls up at a different rate — deeper = slower
+      // Rates: fraction of scrollTop converted to px offset (gentle, stays in view)
+      // pw2 Pisces (faster), pw3 Scorpio, pw4 Aquarius
+      var rates = [0.10, 0.11, 0.08];
+      hiEl.pw[0].style.transform = 'translateY(calc(-50% + ' + (-st * rates[0]).toFixed(0) + 'px))';
+      hiEl.pw[1].style.transform = 'translateY(calc(-50% + ' + (-st * rates[1]).toFixed(0) + 'px))';
+      hiEl.pw[2].style.transform = 'translateY('              + (-st * rates[2]).toFixed(0) + 'px)';
     }
 
     function animate() {
       drawStars();
+      updateIntroAssets();
       requestAnimationFrame(animate);
     }
 
